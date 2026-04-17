@@ -1,0 +1,12 @@
+# Zouroboros Memory Bridge — Default Configuration
+# Environment variables override these values (see config.py for mapping).
+
+shared_db: /home/workspace/.zo/memory/shared-facts.db
+mimir_db: /home/workspace/.zo/memory/mimir.db
+cli_path: /home/workspace/Skills/zo-memory-system/scripts/memory.ts
+persona: hermes
+bridge_timeout_ms: 500
+prefetch_limit: 6
+enable_mimir_synthesis: true
+enable_wikilinks: true
+async_writes: true

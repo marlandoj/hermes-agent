@@ -1,0 +1,10 @@
+name: zouroboros
+description: >
+  Bridges Hermes to the Zouroboros zo-memory ecosystem. Dual-write architecture:
+  Hindsight handles fast local recall while this provider adds cross-persona
+  visibility via async zo-memory CLI bridge (shared-facts.db, mimir.db).
+version: "0.1.0"
+author: marlandoj.zo.computer
+requires:
+  - bun
+  - zo-memory-system

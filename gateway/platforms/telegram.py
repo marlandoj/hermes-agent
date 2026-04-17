@@ -76,6 +76,18 @@ from gateway.platforms.telegram_network import (
     parse_fallback_ip_env,
 )
 
+try:
+    import sys as _sys
+    from pathlib import Path as _ZPath
+    _zo_plugins = str(_ZPath(__file__).resolve().parents[2] / "plugins" / "zouroboros")
+    if _zo_plugins not in _sys.path:
+        _sys.path.insert(0, _zo_plugins)
+    from plugins.zouroboros import telegram_commands as _zo_telegram_commands
+    _ZO_COMMANDS_AVAILABLE = True
+except Exception:
+    _zo_telegram_commands = None  # type: ignore[assignment]
+    _ZO_COMMANDS_AVAILABLE = False
+
 
 def check_telegram_requirements() -> bool:
     """Check if Telegram dependencies are available."""
@@ -2175,7 +2187,29 @@ class TelegramAdapter(BasePlatformAdapter):
             return
         if not self._should_process_message(update.message, is_command=True):
             return
-        
+
+        # Intercept Zouroboros read-only monitoring commands before forwarding to agent.
+        if _ZO_COMMANDS_AVAILABLE and _zo_telegram_commands is not None:
+            raw_text = update.message.text.strip()
+            # Strip leading "/" and split off any bot-name suffix (e.g. /status@MyBot)
+            cmd_part = raw_text.lstrip("/").split("@")[0].split()[0]
+            cmd_args = " ".join(raw_text.split()[1:]) if len(raw_text.split()) > 1 else ""
+            if _zo_telegram_commands.is_zouroboros_command(cmd_part):
+                try:
+                    response = await _zo_telegram_commands.handle_command(cmd_part, cmd_args)
+                    if response:
+                        await update.message.reply_text(
+                            response,
+                            parse_mode="Markdown",
+                        )
+                        return
+                except Exception as _zo_err:
+                    logger.warning(
+                        "[%s] Zouroboros command /%s failed: %s",
+                        self.name, cmd_part, _zo_err,
+                    )
+                    # Fall through to normal agent handling on error
+
         event = self._build_message_event(update.message, MessageType.COMMAND)
         await self.handle_message(event)
     
